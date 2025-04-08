@@ -30,7 +30,7 @@ export const GameLayout = ({ children, className = '' }: GameLayoutProps) => {
       </main>
       
       <footer className="w-full max-w-4xl mt-8 text-center text-gray-500 text-sm">
-        &copy; {new Date().getFullYear()} IntervalMaster - Todos os direitos reservados
+        &copy; {new Date().getFullYear()} IntervalMaster - Desenvolvido por <a href="https://github.com/deciomontanhani" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Décio Montanhani</a>
       </footer>
     </div>
   );

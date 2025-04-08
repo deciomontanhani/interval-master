@@ -6,14 +6,12 @@ import { Note } from '@/lib/types';
 interface NoteDisplayProps {
   note: Note;
   label?: string;
-  playable?: boolean;
   className?: string;
 }
 
 export const NoteDisplay = ({
   note,
   label,
-  playable = false,
   className = ''
 }: NoteDisplayProps) => {
   return (

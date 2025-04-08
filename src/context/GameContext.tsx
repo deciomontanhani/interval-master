@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { 
   GameState, 
   GameContextType, 
@@ -28,6 +28,56 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  
+  // Avança para a próxima pergunta
+  const nextQuestion = () => {
+    const newQuestion = generateQuestion(gameState.level);
+    
+    setGameState(prev => ({
+      ...prev,
+      currentQuestion: newQuestion,
+      timeRemaining: newQuestion.timeLimit
+    }));
+  };
+  
+  // Lidar com o timeout (tempo esgotado)
+  const handleTimeout = useCallback(() => {
+    if (gameState.currentQuestion === null) {
+      return;
+    }
+    
+    // Prepara o objeto de resposta
+    const answerData = {
+      question: gameState.currentQuestion,
+      userAnswer: null,
+      isCorrect: false,
+      timeSpent: gameState.currentQuestion.timeLimit
+    };
+    
+    // Atualiza o estado
+    setGameState(prev => ({
+      ...prev,
+      streak: 0,
+      answeredQuestions: [...prev.answeredQuestions, answerData],
+      currentRoundQuestions: [...prev.currentRoundQuestions, answerData],
+      questionsInRound: prev.questionsInRound + 1,
+      canAdvanceRound: false // Tempo esgotado conta como erro
+    }));
+    
+    // Aguarde um pouco antes de ir para próxima pergunta
+    setTimeout(() => {
+      // Verifica se a rodada foi concluída
+      if (gameState.questionsInRound + 1 >= QUESTIONS_PER_ROUND) {
+        // Rodada completa - mostra resumo da rodada
+        setGameState(state => ({
+          ...state,
+          gameStatus: 'round_summary'
+        }));
+      } else {
+        nextQuestion();
+      }
+    }, 1500);
+  }, [gameState.currentQuestion, gameState.questionsInRound, nextQuestion]);
   
   // Gerencia o timer
   useEffect(() => {
@@ -60,14 +110,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearInterval(timerRef.current);
       }
     };
-  }, [gameState.gameStatus, gameState.currentQuestion]);
+  }, [gameState.gameStatus, gameState.currentQuestion, handleTimeout]);
   
   // Recupera a pontuação máxima do localStorage
   useEffect(() => {
     const storedHighScore = localStorage.getItem('intervalMasterHighScore');
     if (storedHighScore) {
-      const highScore = parseInt(storedHighScore, 10);
-      // Podemos usar isso em algum lugar no UI
+      // Pontuação máxima armazenada - podemos usar em algum lugar da UI futuramente
+      localStorage.getItem('intervalMasterHighScore');
     }
   }, []);
   
@@ -176,56 +226,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }));
       }
     }, 1500); // 1.5 segundos de feedback
-  };
-  
-  // Lidar com o timeout (tempo esgotado)
-  const handleTimeout = () => {
-    if (gameState.currentQuestion === null) {
-      return;
-    }
-    
-    // Prepara o objeto de resposta
-    const answerData = {
-      question: gameState.currentQuestion,
-      userAnswer: null,
-      isCorrect: false,
-      timeSpent: gameState.currentQuestion.timeLimit
-    };
-    
-    // Atualiza o estado
-    setGameState(prev => ({
-      ...prev,
-      streak: 0,
-      answeredQuestions: [...prev.answeredQuestions, answerData],
-      currentRoundQuestions: [...prev.currentRoundQuestions, answerData],
-      questionsInRound: prev.questionsInRound + 1,
-      canAdvanceRound: false // Tempo esgotado conta como erro
-    }));
-    
-    // Aguarde um pouco antes de ir para próxima pergunta
-    setTimeout(() => {
-      // Verifica se a rodada foi concluída
-      if (gameState.questionsInRound + 1 >= QUESTIONS_PER_ROUND) {
-        // Rodada completa - mostra resumo da rodada
-        setGameState(state => ({
-          ...state,
-          gameStatus: 'round_summary'
-        }));
-      } else {
-        nextQuestion();
-      }
-    }, 1500);
-  };
-  
-  // Avança para a próxima pergunta
-  const nextQuestion = () => {
-    const newQuestion = generateQuestion(gameState.level);
-    
-    setGameState(prev => ({
-      ...prev,
-      currentQuestion: newQuestion,
-      timeRemaining: newQuestion.timeLimit
-    }));
   };
   
   // Continua para a próxima rodada após o resumo

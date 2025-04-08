@@ -4,13 +4,14 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { formatIntervalName } from '@/lib/intervals';
+import { Question, Note } from '@/lib/types';
 
 interface RoundSummaryProps {
   roundNumber: number;
   level: number;
   questions: {
-    question: any;
-    userAnswer: any | null;
+    question: Question;
+    userAnswer: Note | null;
     isCorrect: boolean;
     timeSpent: number;
   }[];

@@ -1,8 +1,7 @@
 import { 
   Question, 
   Note, 
-  GameState,
-  Interval
+  GameState
 } from './types';
 import { 
   calculateInterval, 
