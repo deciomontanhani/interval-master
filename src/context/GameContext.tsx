@@ -29,21 +29,41 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   
+  // Limpa o timer ao desmontar o componente ou quando o status do jogo muda
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+  
   // Avança para a próxima pergunta
-  const nextQuestion = () => {
-    const newQuestion = generateQuestion(gameState.level);
-    
-    setGameState(prev => ({
-      ...prev,
-      currentQuestion: newQuestion,
-      timeRemaining: newQuestion.timeLimit
-    }));
-  };
+  const nextQuestion = useCallback(() => {
+    try {
+      const newQuestion = generateQuestion(gameState.level);
+      
+      setGameState(prev => ({
+        ...prev,
+        currentQuestion: newQuestion,
+        timeRemaining: newQuestion.timeLimit
+      }));
+    } catch (error) {
+      console.error('Erro ao avançar para próxima questão:', error);
+    }
+  }, [gameState.level]);
   
   // Lidar com o timeout (tempo esgotado)
   const handleTimeout = useCallback(() => {
-    if (gameState.currentQuestion === null) {
+    if (!gameState.currentQuestion) {
       return;
+    }
+    
+    // Limpar o timer existente
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
     
     // Prepara o objeto de resposta
@@ -55,107 +75,135 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     // Atualiza o estado
-    setGameState(prev => ({
-      ...prev,
-      streak: 0,
-      answeredQuestions: [...prev.answeredQuestions, answerData],
-      currentRoundQuestions: [...prev.currentRoundQuestions, answerData],
-      questionsInRound: prev.questionsInRound + 1,
-      canAdvanceRound: false // Tempo esgotado conta como erro
-    }));
+    setGameState(prev => {
+      const updatedState = {
+        ...prev,
+        streak: 0,
+        answeredQuestions: [...prev.answeredQuestions, answerData],
+        currentRoundQuestions: [...prev.currentRoundQuestions, answerData],
+        questionsInRound: prev.questionsInRound + 1,
+        canAdvanceRound: false // Tempo esgotado conta como erro
+      };
+      
+      // Verificamos se a rodada foi concluída
+      if (updatedState.questionsInRound >= QUESTIONS_PER_ROUND) {
+        return {
+          ...updatedState,
+          gameStatus: 'round_summary'
+        };
+      }
+      
+      return updatedState;
+    });
     
     // Aguarde um pouco antes de ir para próxima pergunta
     setTimeout(() => {
-      // Verifica se a rodada foi concluída
-      if (gameState.questionsInRound + 1 >= QUESTIONS_PER_ROUND) {
-        // Rodada completa - mostra resumo da rodada
-        setGameState(state => ({
-          ...state,
-          gameStatus: 'round_summary'
-        }));
-      } else {
-        nextQuestion();
-      }
+      setGameState(prev => {
+        // Se já mudamos para o resumo da rodada, não fazemos nada
+        if (prev.gameStatus === 'round_summary') {
+          return prev;
+        }
+        
+        try {
+          // Caso contrário, vamos para a próxima pergunta
+          const newQuestion = generateQuestion(prev.level);
+          return {
+            ...prev,
+            currentQuestion: newQuestion,
+            timeRemaining: newQuestion.timeLimit
+          };
+        } catch (error) {
+          console.error('Erro ao gerar nova questão após timeout:', error);
+          return prev;
+        }
+      });
     }, 1500);
-  }, [gameState.currentQuestion, gameState.questionsInRound, nextQuestion]);
+  }, [gameState.currentQuestion]);
   
   // Gerencia o timer
   useEffect(() => {
+    // Só iniciamos o timer quando o jogo está em andamento e temos uma questão
     if (gameState.gameStatus === 'playing' && gameState.currentQuestion) {
+      // Limpa qualquer timer existente
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
       
+      // Marca o tempo de início
       startTimeRef.current = Date.now();
       
+      // Inicia um novo timer
       timerRef.current = setInterval(() => {
-        const elapsedTime = Math.floor((Date.now() - (startTimeRef.current || 0)) / 1000);
+        if (startTimeRef.current === null) return;
+        
+        const elapsedTime = Math.floor((Date.now() - startTimeRef.current) / 1000);
         const timeRemaining = Math.max(0, gameState.currentQuestion!.timeLimit - elapsedTime);
         
+        // Atualiza o tempo restante
         setGameState(prev => ({ ...prev, timeRemaining }));
         
-        if (timeRemaining === 0) {
+        // Verifica se o tempo acabou
+        if (timeRemaining <= 0) {
           if (timerRef.current) {
             clearInterval(timerRef.current);
+            timerRef.current = null;
           }
           
           // O tempo acabou, registrar como resposta incorreta
           handleTimeout();
         }
       }, 100);
+      
+      // Limpa o timer quando o componente é desmontado ou quando o status do jogo muda
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
     }
-    
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
   }, [gameState.gameStatus, gameState.currentQuestion, handleTimeout]);
   
-  // Recupera a pontuação máxima do localStorage
-  useEffect(() => {
-    const storedHighScore = localStorage.getItem('intervalMasterHighScore');
-    if (storedHighScore) {
-      // Pontuação máxima armazenada - podemos usar em algum lugar da UI futuramente
-      localStorage.getItem('intervalMasterHighScore');
+  // Inicia o jogo com o nível selecionado
+  const startGame = useCallback((level: 1 | 2 | 3 | 4) => {
+    try {
+      console.log('Iniciando jogo com nível:', level);
+      
+      // Limpa qualquer timer existente
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      const newQuestion = generateQuestion(level);
+      console.log('Nova questão gerada:', newQuestion);
+      
+      setGameState({
+        ...initialGameState,
+        level,
+        gameStatus: 'playing',
+        currentQuestion: newQuestion,
+        timeRemaining: newQuestion.timeLimit,
+        currentRoundQuestions: [],
+        canAdvanceRound: false
+      });
+      
+      console.log('Estado do jogo atualizado para playing');
+    } catch (error) {
+      console.error('Erro ao iniciar o jogo:', error);
     }
   }, []);
   
-  // Atualiza a pontuação máxima quando o jogo termina
-  useEffect(() => {
-    if (gameState.gameStatus === 'results') {
-      const storedHighScore = localStorage.getItem('intervalMasterHighScore');
-      const currentHighScore = storedHighScore ? parseInt(storedHighScore, 10) : 0;
-      
-      if (gameState.score > currentHighScore) {
-        localStorage.setItem('intervalMasterHighScore', gameState.score.toString());
-      }
-    }
-  }, [gameState.gameStatus, gameState.score]);
-  
-  // Inicia o jogo com o nível selecionado
-  const startGame = (level: 1 | 2 | 3 | 4) => {
-    const newQuestion = generateQuestion(level);
-    
-    setGameState({
-      ...initialGameState,
-      level,
-      gameStatus: 'playing',
-      currentQuestion: newQuestion,
-      timeRemaining: newQuestion.timeLimit,
-      currentRoundQuestions: [],
-      canAdvanceRound: false
-    });
-  };
-  
   // Responde a pergunta atual
-  const answerQuestion = (userAnswer: Note) => {
+  const answerQuestion = useCallback((userAnswer: Note) => {
     if (gameState.currentQuestion === null || gameState.gameStatus !== 'playing') {
       return;
     }
     
+    // Limpa o timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
     
     const timeSpent = startTimeRef.current 
@@ -180,72 +228,87 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timeSpent
     };
     
-    // Adiciona resposta ao histórico geral
-    const newAnsweredQuestions = [
-      ...gameState.answeredQuestions,
-      answerData
-    ];
-    
-    // Adiciona resposta ao histórico da rodada atual
-    const newCurrentRoundQuestions = [
-      ...gameState.currentRoundQuestions,
-      answerData
-    ];
-    
-    // Verifica se pode avançar de rodada (sem erros na rodada atual)
-    const hasNoErrors = newCurrentRoundQuestions.every(q => q.isCorrect);
-    
     // Atualiza o estado
-    setGameState(prev => ({
-      ...prev,
-      score: newScore,
-      streak: newStreak,
-      answeredQuestions: newAnsweredQuestions,
-      currentRoundQuestions: newCurrentRoundQuestions,
-      questionsInRound: prev.questionsInRound + 1,
-      canAdvanceRound: hasNoErrors
-    }));
+    setGameState(prev => {
+      const updatedQuestionsInRound = prev.questionsInRound + 1;
+      const newAnsweredQuestions = [...prev.answeredQuestions, answerData];
+      const newCurrentRoundQuestions = [...prev.currentRoundQuestions, answerData];
+      
+      // Verifica se pode avançar de rodada (sem erros na rodada atual)
+      const hasNoErrors = newCurrentRoundQuestions.every(q => q.isCorrect);
+      
+      // Verifica se a rodada foi concluída
+      if (updatedQuestionsInRound >= QUESTIONS_PER_ROUND) {
+        return {
+          ...prev,
+          score: newScore,
+          streak: newStreak,
+          answeredQuestions: newAnsweredQuestions,
+          currentRoundQuestions: newCurrentRoundQuestions,
+          questionsInRound: updatedQuestionsInRound,
+          canAdvanceRound: hasNoErrors,
+          gameStatus: 'round_summary'
+        };
+      }
+      
+      return {
+        ...prev,
+        score: newScore,
+        streak: newStreak,
+        answeredQuestions: newAnsweredQuestions,
+        currentRoundQuestions: newCurrentRoundQuestions,
+        questionsInRound: updatedQuestionsInRound,
+        canAdvanceRound: hasNoErrors
+      };
+    });
     
     // Aguarde um pouco para mostrar feedback antes de ir para próxima pergunta
     setTimeout(() => {
-      // Verifica se a rodada foi concluída
-      if (gameState.questionsInRound + 1 >= QUESTIONS_PER_ROUND) {
-        // Rodada completa - mostra resumo da rodada
-        setGameState(state => ({
-          ...state,
-          gameStatus: 'round_summary'
-        }));
-      } else {
-        // Próxima pergunta na mesma rodada
-        const newQuestion = generateQuestion(gameState.level);
+      setGameState(prev => {
+        // Se já mudamos para o resumo da rodada, não fazemos nada
+        if (prev.gameStatus === 'round_summary') {
+          return prev;
+        }
         
-        setGameState(state => ({
-          ...state,
-          currentQuestion: newQuestion,
-          timeRemaining: newQuestion.timeLimit
-        }));
-      }
+        try {
+          // Caso contrário, vamos para a próxima pergunta
+          const newQuestion = generateQuestion(prev.level);
+          return {
+            ...prev,
+            currentQuestion: newQuestion,
+            timeRemaining: newQuestion.timeLimit
+          };
+        } catch (error) {
+          console.error('Erro ao gerar nova questão após resposta:', error);
+          return prev;
+        }
+      });
     }, 1500); // 1.5 segundos de feedback
-  };
+  }, [gameState]);
   
   // Continua para a próxima rodada após o resumo
-  const continueToNextRound = () => {
+  const continueToNextRound = useCallback(() => {
     // Verifica se pode avançar para o próximo nível
     if (gameState.canAdvanceRound && shouldAdvanceLevel(gameState) && gameState.level < 4) {
       // Avançar para o próximo nível
       const newLevel = (gameState.level + 1) as GameState['level'];
-      const newQuestion = generateQuestion(newLevel);
       
-      setGameState(prev => ({
-        ...prev,
-        level: newLevel,
-        currentRound: 1,
-        questionsInRound: 0,
-        currentQuestion: newQuestion,
-        timeRemaining: newQuestion.timeLimit,
-        gameStatus: 'playing',
-        currentRoundQuestions: []
-      }));
+      try {
+        const newQuestion = generateQuestion(newLevel);
+        
+        setGameState(prev => ({
+          ...prev,
+          level: newLevel,
+          currentRound: 1,
+          questionsInRound: 0,
+          currentQuestion: newQuestion,
+          timeRemaining: newQuestion.timeLimit,
+          gameStatus: 'playing',
+          currentRoundQuestions: []
+        }));
+      } catch (error) {
+        console.error('Erro ao avançar para próximo nível:', error);
+      }
     } else if (isGameOver({
       ...gameState,
       currentRound: gameState.currentRound + 1
@@ -257,17 +320,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
     } else if (gameState.canAdvanceRound) {
       // Próxima rodada, mesmo nível
-      const newQuestion = generateQuestion(gameState.level);
-      
-      setGameState(prev => ({
-        ...prev,
-        currentRound: prev.currentRound + 1,
-        questionsInRound: 0,
-        currentQuestion: newQuestion,
-        timeRemaining: newQuestion.timeLimit,
-        gameStatus: 'playing',
-        currentRoundQuestions: []
-      }));
+      try {
+        const newQuestion = generateQuestion(gameState.level);
+        
+        setGameState(prev => ({
+          ...prev,
+          currentRound: prev.currentRound + 1,
+          questionsInRound: 0,
+          currentQuestion: newQuestion,
+          timeRemaining: newQuestion.timeLimit,
+          gameStatus: 'playing',
+          currentRoundQuestions: []
+        }));
+      } catch (error) {
+        console.error('Erro ao avançar para próxima rodada:', error);
+      }
     } else {
       // Se não pode avançar (teve erros), vamos para a tela de resultados
       setGameState(prev => ({
@@ -275,24 +342,57 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         gameStatus: 'results'
       }));
     }
-  };
+  }, [gameState]);
   
   // Reseta o jogo para o estado inicial
-  const resetGame = () => {
+  const resetGame = useCallback(() => {
+    // Limpa qualquer timer existente
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
     setGameState({
       ...initialGameState,
       currentRoundQuestions: [],
       canAdvanceRound: false
     });
-  };
+  }, []);
   
   // Volta ao menu principal
-  const goToMenu = () => {
+  const goToMenu = useCallback(() => {
+    // Limpa qualquer timer existente
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
     setGameState(prev => ({
       ...prev,
       gameStatus: 'menu'
     }));
-  };
+  }, []);
+  
+  // Recupera a pontuação máxima do localStorage
+  useEffect(() => {
+    const storedHighScore = localStorage.getItem('intervalMasterHighScore');
+    if (storedHighScore) {
+      // Pontuação máxima armazenada - podemos usar em algum lugar da UI futuramente
+      localStorage.getItem('intervalMasterHighScore');
+    }
+  }, []);
+  
+  // Atualiza a pontuação máxima quando o jogo termina
+  useEffect(() => {
+    if (gameState.gameStatus === 'results') {
+      const storedHighScore = localStorage.getItem('intervalMasterHighScore');
+      const currentHighScore = storedHighScore ? parseInt(storedHighScore, 10) : 0;
+      
+      if (gameState.score > currentHighScore) {
+        localStorage.setItem('intervalMasterHighScore', gameState.score.toString());
+      }
+    }
+  }, [gameState.gameStatus, gameState.score]);
   
   // Valor do contexto
   const contextValue: GameContextType = {
