@@ -272,7 +272,8 @@ export const getStableNotes = (): Note[] => {
 export const generateWrongOptionsForSSR = (
   referenceNote: Note, 
   correctAnswer: Note, 
-  count: number = 3
+  count: number = 3,
+  isClient: boolean = false
 ): Note[] => {
   const stableNotes = getStableNotes();
   const options: Note[] = [correctAnswer];
@@ -291,8 +292,35 @@ export const generateWrongOptionsForSSR = (
     }
   }
   
-  // Retorna as opções na ordem original (sem embaralhar)
-  return options;
+  // Embaralhar as opções de uma forma determinística no servidor
+  // mas aleatória no cliente
+  if (isClient) {
+    // Embaralhar completamente as opções no cliente
+    return shuffleArray([...options]);
+  } else {
+    // No servidor, usar uma abordagem determinística para evitar erro de hidratação
+    // mas ainda assim, não deixar a resposta correta sempre na primeira posição
+    const shuffledOptions = [...options];
+    // Trocar a resposta correta com uma posição diferente
+    // de forma determinística baseada na nota de referência
+    const swapIndex = (noteToIndex[referenceNote.name] % (shuffledOptions.length - 1)) + 1;
+    
+    // Trocar a posição 0 (resposta correta) com a posição swapIndex
+    [shuffledOptions[0], shuffledOptions[swapIndex]] = 
+    [shuffledOptions[swapIndex], shuffledOptions[0]];
+    
+    return shuffledOptions;
+  }
+};
+
+// Função auxiliar para embaralhar um array
+const shuffleArray = <T>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
 };
 
 // Formata o nome do intervalo para exibição

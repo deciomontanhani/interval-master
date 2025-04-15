@@ -66,7 +66,7 @@ export const generateQuestion = (level: 1 | 2 | 3 | 4, isClient: boolean = false
   
   // Gera opções erradas (entre 3 a 5 dependendo do nível)
   const optionsCount = level < 3 ? 3 : level === 3 ? 4 : 5;
-  const options = generateWrongOptionsForSSR(referenceNote, correctAnswer, optionsCount);
+  const options = generateWrongOptionsForSSR(referenceNote, correctAnswer, optionsCount, isClient);
   
   // Define o limite de tempo (reduz para níveis mais altos)
   const timeLimit = level === 4 ? 7 : DEFAULT_TIME_LIMIT;
