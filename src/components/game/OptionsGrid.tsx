@@ -44,22 +44,40 @@ export const OptionsGrid = ({
     }
   }, [disabled, onSelect]);
   
+  // Determinar o melhor layout de grid com base na quantidade de opções
+  const getGridClass = () => {
+    const count = options.length;
+    
+    // Em dispositivos móveis sempre 2 colunas para telas pequenas
+    if (count <= 3) {
+      return "grid-cols-2 md:grid-cols-3";
+    } else if (count === 4) {
+      return "grid-cols-2 md:grid-cols-2 lg:grid-cols-4";
+    } else {
+      return "grid-cols-2 md:grid-cols-3";
+    }
+  };
+  
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full">
+    <div className={`grid ${getGridClass()} gap-3 w-full`}>
       {options.map((option, index) => (
         <Card
           key={`${option.name}-${index}`}
           className={`
-            p-4 text-center cursor-pointer transition-all
-            hover:bg-blue-50 hover:shadow-md
+            aspect-square flex flex-col items-center justify-center
+            cursor-pointer transition-all p-0 overflow-hidden
+            hover:bg-blue-50 active:bg-blue-100 touch-manipulation
+            min-h-[80px] md:min-h-[100px]
             ${disabled ? 'opacity-80 pointer-events-none' : ''}
             ${getOptionClass(option)}
           `}
           elevation={selected ? 'none' : 'sm'}
           onClick={() => handleOptionClick(option)}
         >
-          <div className="text-xl md:text-2xl font-bold">
-            {option.name}
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-2xl md:text-3xl font-bold">
+              {option.name}
+            </span>
           </div>
         </Card>
       ))}

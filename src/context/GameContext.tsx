@@ -42,7 +42,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Avança para a próxima pergunta
   const nextQuestion = useCallback(() => {
     try {
-      const newQuestion = generateQuestion(gameState.level);
+      // Usando isClient=true para garantir valores aleatórios no cliente
+      const newQuestion = generateQuestion(gameState.level, true);
       
       setGameState(prev => ({
         ...prev,
@@ -106,7 +107,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         try {
           // Caso contrário, vamos para a próxima pergunta
-          const newQuestion = generateQuestion(prev.level);
+          // Usando isClient=true para garantir valores aleatórios no cliente
+          const newQuestion = generateQuestion(prev.level, true);
           return {
             ...prev,
             currentQuestion: newQuestion,
@@ -175,7 +177,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         timerRef.current = null;
       }
       
-      const newQuestion = generateQuestion(level);
+      // Gera questão com isClient=true para usar valores aleatórios no cliente
+      const newQuestion = generateQuestion(level, true);
       console.log('Nova questão gerada:', newQuestion);
       
       setGameState({
@@ -272,7 +275,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         try {
           // Caso contrário, vamos para a próxima pergunta
-          const newQuestion = generateQuestion(prev.level);
+          // Usando isClient=true para garantir valores aleatórios no cliente
+          const newQuestion = generateQuestion(prev.level, true);
           return {
             ...prev,
             currentQuestion: newQuestion,

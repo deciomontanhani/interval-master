@@ -8,7 +8,9 @@ import {
   generateRandomInterval, 
   generateRandomNote,
   generateWrongOptions,
-  noteToIndex
+  noteToIndex,
+  generateRandomNoteForSSR,
+  generateWrongOptionsForSSR
 } from './intervals';
 
 // Constantes de jogo
@@ -38,9 +40,10 @@ export const initialGameState: GameState = {
 };
 
 // Gera uma nova pergunta de acordo com o nível
-export const generateQuestion = (level: 1 | 2 | 3 | 4): Question => {
+// isClient: se true, usará Math.random para gerar valores aleatórios
+export const generateQuestion = (level: 1 | 2 | 3 | 4, isClient: boolean = false): Question => {
   // Gera uma nota de referência aleatória
-  const referenceNote = generateRandomNote();
+  const referenceNote = isClient ? generateRandomNote() : generateRandomNoteForSSR(0);
   
   // Gera um intervalo aleatório baseado no nível
   const interval = generateRandomInterval(level);
@@ -50,7 +53,9 @@ export const generateQuestion = (level: 1 | 2 | 3 | 4): Question => {
   
   // Gera opções erradas (entre 3 a 5 dependendo do nível)
   const optionsCount = level < 3 ? 3 : level === 3 ? 4 : 5;
-  const options = generateWrongOptions(referenceNote, correctAnswer, optionsCount);
+  const options = isClient 
+    ? generateWrongOptions(referenceNote, correctAnswer, optionsCount)
+    : generateWrongOptionsForSSR(referenceNote, correctAnswer, optionsCount);
   
   // Define o limite de tempo (reduz para níveis mais altos)
   const timeLimit = level === 4 ? 7 : DEFAULT_TIME_LIMIT;

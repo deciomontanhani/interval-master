@@ -53,7 +53,7 @@ const indexToNoteFlats: Record<number, NoteName> = {
 };
 
 // Usar notação de bemóis ou sustenidos com base no ciclo de quintas
-const useFlats = (referenceName: NoteName): boolean => {
+const shouldUseFlats = (referenceName: NoteName): boolean => {
   // Notas que tipicamente usam bemóis no ciclo de quintas (F, Bb, Eb, Ab, Db, Gb, Cb)
   return ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'].includes(referenceName);
 };
@@ -116,7 +116,7 @@ export const calculateInterval = (referenceNote: Note, interval: Interval): Note
   const resultIndex = (startIndex + semitonesAway) % 12;
   
   // Decidir se usa bemois ou sustenidos com base na nota de referência
-  const newNoteName = useFlats(name) ? indexToNoteFlats[resultIndex] : indexToNoteSharps[resultIndex];
+  const newNoteName = shouldUseFlats(name) ? indexToNoteFlats[resultIndex] : indexToNoteSharps[resultIndex];
   
   // Calcular nova oitava apenas para fins de reprodução de áudio
   let newOctave = octave;
@@ -169,17 +169,51 @@ export const generateRandomInterval = (level: 1 | 2 | 3 | 4): Interval => {
   }
 };
 
-// Gera uma nota aleatória
-export const generateRandomNote = (): Note => {
-  const noteNames = Object.keys(noteToIndex) as NoteName[];
-  // Filtrar para obter apenas as notas únicas (sem enarmônicos duplicados)
-  const uniqueNoteNames = [...new Set(noteNames.map(name => noteToIndex[name]))].map(index => 
-    Math.random() > 0.5 ? indexToNoteSharps[index] : indexToNoteFlats[index]
-  );
-  const randomName = uniqueNoteNames[Math.floor(Math.random() * uniqueNoteNames.length)] as NoteName;
-  const octave = (Math.floor(Math.random() * 3) + 3) as Note['octave']; // Oitavas 3, 4 ou 5
+// Conjunto fixo de notas para uso durante a hidratação (SSR)
+// Isso evita inconsistências entre cliente e servidor
+export const getStableNotes = (): Note[] => {
+  return [
+    { name: 'C', octave: 4 },
+    { name: 'D', octave: 4 },
+    { name: 'E', octave: 4 },
+    { name: 'F', octave: 4 },
+    { name: 'G', octave: 4 },
+    { name: 'A', octave: 4 },
+    { name: 'B', octave: 4 }
+  ];
+};
+
+// Versão segura para SSR, evita Math.random durante a hidratação
+export const generateRandomNoteForSSR = (index: number = 0): Note => {
+  const stableNotes = getStableNotes();
+  return stableNotes[index % stableNotes.length];
+};
+
+// Versão segura para SSR, evita sort aleatório durante a hidratação
+export const generateWrongOptionsForSSR = (
+  referenceNote: Note, 
+  correctAnswer: Note, 
+  count: number = 3
+): Note[] => {
+  const stableNotes = getStableNotes();
+  const options: Note[] = [correctAnswer];
   
-  return { name: randomName, octave };
+  // Adiciona notas de forma determinística
+  for (let i = 0; i < stableNotes.length && options.length < count + 1; i++) {
+    const note = stableNotes[i];
+    
+    // Verifica se a nota já está nas opções ou é a resposta correta
+    const isDuplicate = options.some(
+      existingNote => noteToIndex[existingNote.name] === noteToIndex[note.name]
+    );
+    
+    if (!isDuplicate) {
+      options.push(note);
+    }
+  }
+  
+  // Retorna as opções na ordem original (sem embaralhar)
+  return options;
 };
 
 // Formata o nome do intervalo para exibição
@@ -226,6 +260,19 @@ export const getIntervalNameByNumber = (number: IntervalNumber): string => {
     case '8': return 'Oitava';
     default: return '';
   }
+};
+
+// Gera uma nota aleatória
+export const generateRandomNote = (): Note => {
+  const noteNames = Object.keys(noteToIndex) as NoteName[];
+  // Filtrar para obter apenas as notas únicas (sem enarmônicos duplicados)
+  const uniqueNoteNames = [...new Set(noteNames.map(name => noteToIndex[name]))].map(index => 
+    Math.random() > 0.5 ? indexToNoteSharps[index] : indexToNoteFlats[index]
+  );
+  const randomName = uniqueNoteNames[Math.floor(Math.random() * uniqueNoteNames.length)] as NoteName;
+  const octave = (Math.floor(Math.random() * 3) + 3) as Note['octave']; // Oitavas 3, 4 ou 5
+  
+  return { name: randomName, octave };
 };
 
 // Gera opções erradas para uma pergunta

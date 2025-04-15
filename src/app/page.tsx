@@ -29,10 +29,6 @@ export default function Home() {
     <GameLayout>
       <div className="flex flex-col items-center justify-center gap-8">
         <Card className="w-full max-w-xl p-8">
-          <h2 className="text-2xl font-bold text-center mb-6 text-[#1D3557]">
-            Bem-vindo ao IntervalMaster!
-          </h2>
-          
           <p className="text-gray-700 mb-6 text-center">
             Treine seu conhecimento sobre intervalos musicais. Escolha um nível de dificuldade para começar:
           </p>

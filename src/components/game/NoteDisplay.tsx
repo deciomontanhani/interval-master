@@ -8,25 +8,28 @@ interface NoteDisplayProps {
   label?: string;
   className?: string;
   showOctave?: boolean;
+  compact?: boolean;
 }
 
 export const NoteDisplay = ({
   note,
   label,
   className = '',
-  showOctave = true
+  showOctave = true,
+  compact = false
 }: NoteDisplayProps) => {
   return (
     <div 
       className={`
-        flex flex-col items-center justify-center p-3
+        flex ${compact ? 'inline-flex' : 'flex-col'} items-center justify-center
+        ${compact ? 'p-1.5' : 'p-3'}
         ${className}
       `}
     >
-      <div className="text-xl font-bold">
+      <div className={`font-bold ${compact ? 'text-lg' : 'text-xl'}`}>
         {note.name}{showOctave && note.octave ? note.octave : ''}
       </div>
-      {label && <div className="text-sm text-gray-500 mt-1">{label}</div>}
+      {label && <div className={`text-gray-500 ${compact ? 'text-sm ml-2' : 'text-sm mt-1'}`}>{label}</div>}
     </div>
   );
 }; 
