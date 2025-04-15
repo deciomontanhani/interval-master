@@ -17,6 +17,14 @@ export default function RoundSummaryPage() {
     setMounted(true);
   }, []);
   
+  // Reproduzir um som de celebração quando completar uma rodada com sucesso
+  useEffect(() => {
+    if (mounted && gameState.canAdvanceRound) {
+      // Se o jogador acertou 100%, podemos adicionar efeitos sonoros aqui no futuro
+      console.log('🎉 Parabéns! Rodada completa com 100% de acertos!');
+    }
+  }, [mounted, gameState.canAdvanceRound]);
+  
   // Redirecionar para a página inicial se não estiver no status correto
   useEffect(() => {
     if (!mounted) return; // Evitar navegação durante a hidratação
