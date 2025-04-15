@@ -24,7 +24,9 @@ export const initAudio = async (): Promise<void> => {
 
 // Converte objeto Note para formato de nota do Tone.js
 const formatNoteForTone = (note: Note): string => {
-  return `${note.name}${note.octave}`;
+  // Se não tiver oitava definida, usa a oitava 4 como padrão
+  const octave = note.octave || 4;
+  return `${note.name}${octave}`;
 };
 
 // Toca uma nota

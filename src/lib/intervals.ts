@@ -1,23 +1,28 @@
 import { Note, NoteName, Interval, IntervalType, IntervalNumber } from './types';
 
 // Mapeamento de notas para índices (0-11)
-const noteToIndex: Record<NoteName, number> = {
+export const noteToIndex: Record<NoteName, number> = {
   'C': 0,
   'C#': 1,
+  'Db': 1,
   'D': 2,
   'D#': 3,
+  'Eb': 3,
   'E': 4,
   'F': 5,
   'F#': 6,
+  'Gb': 6,
   'G': 7,
   'G#': 8,
+  'Ab': 8,
   'A': 9,
   'A#': 10,
+  'Bb': 10,
   'B': 11
 };
 
-// Mapeamento de índices para notas
-const indexToNote: Record<number, NoteName> = {
+// Mapeamento de índices para notas (usando ciclo de quintas)
+const indexToNoteSharps: Record<number, NoteName> = {
   0: 'C',
   1: 'C#',
   2: 'D',
@@ -30,6 +35,27 @@ const indexToNote: Record<number, NoteName> = {
   9: 'A',
   10: 'A#',
   11: 'B'
+};
+
+const indexToNoteFlats: Record<number, NoteName> = {
+  0: 'C',
+  1: 'Db',
+  2: 'D',
+  3: 'Eb',
+  4: 'E',
+  5: 'F',
+  6: 'Gb',
+  7: 'G',
+  8: 'Ab',
+  9: 'A',
+  10: 'Bb',
+  11: 'B'
+};
+
+// Usar notação de bemóis ou sustenidos com base no ciclo de quintas
+const useFlats = (referenceName: NoteName): boolean => {
+  // Notas que tipicamente usam bemóis no ciclo de quintas (F, Bb, Eb, Ab, Db, Gb, Cb)
+  return ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'].includes(referenceName);
 };
 
 // Número de semitons para intervalos justos/perfeitos
@@ -63,7 +89,7 @@ const isPerfectInterval = (number: IntervalNumber): boolean => {
 
 // Calcula a nota resultante de um intervalo a partir de uma nota de referência
 export const calculateInterval = (referenceNote: Note, interval: Interval): Note => {
-  const { name, octave } = referenceNote;
+  const { name, octave = 4 } = referenceNote;
   const { number, type = isPerfectInterval(number) ? 'J' : 'M' } = interval;
   
   let semitonesAway = 0;
@@ -88,9 +114,11 @@ export const calculateInterval = (referenceNote: Note, interval: Interval): Note
   // Calcular nova nota
   const startIndex = noteToIndex[name];
   const resultIndex = (startIndex + semitonesAway) % 12;
-  const newNoteName = indexToNote[resultIndex];
   
-  // Calcular nova oitava
+  // Decidir se usa bemois ou sustenidos com base na nota de referência
+  const newNoteName = useFlats(name) ? indexToNoteFlats[resultIndex] : indexToNoteSharps[resultIndex];
+  
+  // Calcular nova oitava apenas para fins de reprodução de áudio
   let newOctave = octave;
   if (startIndex + semitonesAway >= 12) {
     const octavesUp = Math.floor((startIndex + semitonesAway) / 12);
@@ -141,10 +169,14 @@ export const generateRandomInterval = (level: 1 | 2 | 3 | 4): Interval => {
   }
 };
 
-// Gera uma nota aleatória dentro de um intervalo de oitavas
+// Gera uma nota aleatória
 export const generateRandomNote = (): Note => {
   const noteNames = Object.keys(noteToIndex) as NoteName[];
-  const randomName = noteNames[Math.floor(Math.random() * noteNames.length)];
+  // Filtrar para obter apenas as notas únicas (sem enarmônicos duplicados)
+  const uniqueNoteNames = [...new Set(noteNames.map(name => noteToIndex[name]))].map(index => 
+    Math.random() > 0.5 ? indexToNoteSharps[index] : indexToNoteFlats[index]
+  );
+  const randomName = uniqueNoteNames[Math.floor(Math.random() * uniqueNoteNames.length)] as NoteName;
   const octave = (Math.floor(Math.random() * 3) + 3) as Note['octave']; // Oitavas 3, 4 ou 5
   
   return { name: randomName, octave };
@@ -208,8 +240,9 @@ export const generateWrongOptions = (
     const randomNote = generateRandomNote();
     
     // Verifica se a nota já está nas opções ou é a resposta correta
+    // Ignorando a oitava, verificamos apenas o nome da nota
     const isDuplicate = options.some(
-      note => note.name === randomNote.name && note.octave === randomNote.octave
+      note => noteToIndex[note.name] === noteToIndex[randomNote.name]
     );
     
     if (!isDuplicate) {

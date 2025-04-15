@@ -7,7 +7,8 @@ import {
   calculateInterval, 
   generateRandomInterval, 
   generateRandomNote,
-  generateWrongOptions
+  generateWrongOptions,
+  noteToIndex
 } from './intervals';
 
 // Constantes de jogo
@@ -98,7 +99,8 @@ export const checkAnswer = (
   userAnswer: Note
 ): boolean => {
   const { correctAnswer } = question;
-  return correctAnswer.name === userAnswer.name && correctAnswer.octave === userAnswer.octave;
+  // Comparação direta pelo índice numérico equivalente
+  return noteToIndex[correctAnswer.name] === noteToIndex[userAnswer.name];
 };
 
 // Checa se o jogador deve avançar para o próximo nível
@@ -130,5 +132,5 @@ export const isGameOver = (state: GameState): boolean => {
 
 // Formata uma nota para exibição
 export const formatNoteDisplay = (note: Note): string => {
-  return `${note.name}${note.octave}`;
+  return note.octave ? `${note.name}${note.octave}` : note.name;
 }; 

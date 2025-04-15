@@ -74,8 +74,8 @@ export const RoundSummary = ({
                 {formatIntervalName(q.question.interval)}
               </p>
               <p className="text-sm text-gray-600">
-                Nota ref: {q.question.referenceNote.name}{q.question.referenceNote.octave}
-                {q.userAnswer && ` → ${q.userAnswer.name}${q.userAnswer.octave}`}
+                Nota ref: {q.question.referenceNote.name}
+                {q.userAnswer && ` → ${q.userAnswer.name}`}
                 {!q.userAnswer && ' → Tempo esgotado'}
               </p>
             </div>

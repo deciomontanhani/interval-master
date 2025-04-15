@@ -177,7 +177,7 @@ export default function ResultsPage() {
                             Intervalo: {formatIntervalName(q.question.interval)}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Nota de referência: {q.question.referenceNote.name}{q.question.referenceNote.octave}
+                            Nota de referência: {q.question.referenceNote.name}
                           </p>
                         </div>
                         <div className="text-right">

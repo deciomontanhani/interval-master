@@ -1,6 +1,6 @@
-export type NoteName = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
+export type NoteName = 'C' | 'C#' | 'Db' | 'D' | 'D#' | 'Eb' | 'E' | 'F' | 'F#' | 'Gb' | 'G' | 'G#' | 'Ab' | 'A' | 'A#' | 'Bb' | 'B';
 export type OctaveNumber = 3 | 4 | 5;
-export type Note = { name: NoteName; octave: OctaveNumber };
+export type Note = { name: NoteName; octave?: OctaveNumber };
 
 export type IntervalType = 'M' | 'm' | 'J' | 'A' | 'd';  // Maior, menor, justa, aumentada, diminuta
 export type IntervalNumber = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8';

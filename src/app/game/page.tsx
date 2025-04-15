@@ -48,12 +48,12 @@ export default function GamePage() {
     setSelectedAnswer(note);
     setShowFeedback(true);
     
-    // Dar feedback visual por 1.5 segundos antes de passar para a próxima pergunta
+    // Dar feedback visual por 400ms antes de passar para a próxima pergunta
     setTimeout(() => {
       answerQuestion(note);
       setSelectedAnswer(null);
       setShowFeedback(false);
-    }, 1500);
+    }, 400);
   };
   
   // Se não houver pergunta atual, mostrar loading
@@ -88,6 +88,7 @@ export default function GamePage() {
               <NoteDisplay 
                 note={currentQuestion.referenceNote} 
                 className="border border-gray-200 rounded-lg"
+                showOctave={false}
               />
             </div>
             

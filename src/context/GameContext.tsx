@@ -117,7 +117,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return prev;
         }
       });
-    }, 1500);
+    }, 400);
   }, [gameState.currentQuestion]);
   
   // Gerencia o timer
@@ -152,7 +152,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // O tempo acabou, registrar como resposta incorreta
           handleTimeout();
         }
-      }, 100);
+      }, 50); // Atualização mais frequente para melhor responsividade
       
       // Limpa o timer quando o componente é desmontado ou quando o status do jogo muda
       return () => {
@@ -283,7 +283,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return prev;
         }
       });
-    }, 1500); // 1.5 segundos de feedback
+    }, 400); // 400ms de feedback
   }, [gameState]);
   
   // Continua para a próxima rodada após o resumo

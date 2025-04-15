@@ -7,12 +7,14 @@ interface NoteDisplayProps {
   note: Note;
   label?: string;
   className?: string;
+  showOctave?: boolean;
 }
 
 export const NoteDisplay = ({
   note,
   label,
-  className = ''
+  className = '',
+  showOctave = true
 }: NoteDisplayProps) => {
   return (
     <div 
@@ -21,7 +23,9 @@ export const NoteDisplay = ({
         ${className}
       `}
     >
-      <div className="text-xl font-bold">{note.name}{note.octave}</div>
+      <div className="text-xl font-bold">
+        {note.name}{showOctave && note.octave ? note.octave : ''}
+      </div>
       {label && <div className="text-sm text-gray-500 mt-1">{label}</div>}
     </div>
   );

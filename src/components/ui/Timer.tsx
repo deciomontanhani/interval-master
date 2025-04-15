@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface TimerProps {
   timeRemaining: number;
@@ -6,7 +6,7 @@ interface TimerProps {
   className?: string;
 }
 
-export const Timer = ({
+export const Timer = memo(({
   timeRemaining,
   totalTime,
   className = ''
@@ -33,4 +33,4 @@ export const Timer = ({
       </p>
     </div>
   );
-}; 
+}); 
