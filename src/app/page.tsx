@@ -11,19 +11,40 @@ export default function Home() {
   const router = useRouter();
   const { startGame } = useGame();
   const [highScore, setHighScore] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  
+  // Detectar quando estamos no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Carregar pontuação máxima do localStorage
   useEffect(() => {
+    if (!mounted) return;
+    
     const savedHighScore = localStorage.getItem('intervalMasterHighScore');
     if (savedHighScore) {
       setHighScore(parseInt(savedHighScore, 10));
     }
-  }, []);
+  }, [mounted]);
   
   const handleStartGame = (level: 1 | 2 | 3 | 4) => {
+    if (!mounted) return;
+    
     startGame(level);
     router.push('/game');
   };
+  
+  // Renderizar uma versão simplificada até que a hidratação esteja completa
+  if (!mounted) {
+    return (
+      <GameLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <p className="text-xl font-semibold text-gray-600">Carregando...</p>
+        </div>
+      </GameLayout>
+    );
+  }
   
   return (
     <GameLayout>

@@ -37,6 +37,8 @@ export default function GamePage() {
   
   // Redirecionar com base no status do jogo
   useEffect(() => {
+    if (!mounted) return; // Evitar navegação durante a hidratação
+    
     if (gameStatus === 'menu') {
       router.push('/');
     } else if (gameStatus === 'results') {
@@ -44,7 +46,7 @@ export default function GamePage() {
     } else if (gameStatus === 'round_summary') {
       router.push('/round-summary');
     }
-  }, [gameStatus, router]);
+  }, [gameStatus, router, mounted]);
   
   // Lidar com a seleção de resposta
   const handleSelectAnswer = (note: Note) => {

@@ -10,16 +10,26 @@ export default function RoundSummaryPage() {
   const router = useRouter();
   const { gameState, continueToNextRound, goToMenu } = useGame();
   const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  // Garantir que a hidratação aconteça corretamente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Redirecionar para a página inicial se não estiver no status correto
   useEffect(() => {
+    if (!mounted) return; // Evitar navegação durante a hidratação
+    
     if (gameState.gameStatus !== 'round_summary') {
       router.push('/');
     }
-  }, [gameState.gameStatus, router]);
+  }, [gameState.gameStatus, router, mounted]);
   
   // Observar mudanças no estado do jogo após continuar
   useEffect(() => {
+    if (!mounted) return; // Evitar navegação durante a hidratação
+    
     if (shouldRedirect) {
       // Resetar o estado
       setShouldRedirect(false);
@@ -31,9 +41,12 @@ export default function RoundSummaryPage() {
         router.push('/results');
       }
     }
-  }, [gameState.gameStatus, shouldRedirect, router]);
+  }, [gameState.gameStatus, shouldRedirect, router, mounted]);
   
+  // Funções de manipulação
   const handleContinue = () => {
+    if (!mounted) return;
+    
     // Primeiro, realizar a transição de estado
     continueToNextRound();
     
@@ -42,9 +55,22 @@ export default function RoundSummaryPage() {
   };
   
   const handleQuit = () => {
+    if (!mounted) return;
+    
     goToMenu();
     router.push('/');
   };
+  
+  // Renderização com verificação de hidratação
+  if (!mounted) {
+    return (
+      <GameLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <p className="text-xl font-semibold text-gray-600">Carregando...</p>
+        </div>
+      </GameLayout>
+    );
+  }
   
   return (
     <GameLayout>

@@ -9,7 +9,9 @@ export const noteToIndex: Record<NoteName, number> = {
   'D#': 3,
   'Eb': 3,
   'E': 4,
+  'Fb': 4,  // Fb é enarmônico de E
   'F': 5,
+  'E#': 5,  // E# é enarmônico de F
   'F#': 6,
   'Gb': 6,
   'G': 7,
@@ -18,7 +20,8 @@ export const noteToIndex: Record<NoteName, number> = {
   'A': 9,
   'A#': 10,
   'Bb': 10,
-  'B': 11
+  'B': 11,
+  'Cb': 11  // Cb é enarmônico de B
 };
 
 // Mapeamento de índices para notas (usando ciclo de quintas)
@@ -54,8 +57,7 @@ const indexToNoteFlats: Record<number, NoteName> = {
 
 // Usar notação de bemóis ou sustenidos com base no ciclo de quintas
 const shouldUseFlats = (referenceName: NoteName): boolean => {
-  // Notas que tipicamente usam bemóis no ciclo de quintas (F, Bb, Eb, Ab, Db, Gb, Cb)
-  return ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'].includes(referenceName);
+  return CYCLE_OF_FOURTHS.includes(referenceName);
 };
 
 // Número de semitons para intervalos justos/perfeitos
@@ -92,9 +94,10 @@ export const calculateInterval = (referenceNote: Note, interval: Interval): Note
   const { name, octave = 4 } = referenceNote;
   const { number, type = isPerfectInterval(number) ? 'J' : 'M' } = interval;
   
+  // Ajustar a nota com base no tipo de intervalo (maior, menor, etc.)
   let semitonesAway = 0;
   
-  // Determinar o número de semitons com base no tipo de intervalo
+  // Determinar o número padrão de semitons para este intervalo
   if (type === 'J') {
     semitonesAway = perfectIntervals[number];
   } else if (type === 'M') {
@@ -111,14 +114,19 @@ export const calculateInterval = (referenceNote: Note, interval: Interval): Note
       : majorIntervals[number] - 2;
   }
   
-  // Calcular nova nota
+  // Calcular a nota resultante usando o índice
   const startIndex = noteToIndex[name];
   const resultIndex = (startIndex + semitonesAway) % 12;
   
-  // Decidir se usa bemois ou sustenidos com base na nota de referência
-  const newNoteName = shouldUseFlats(name) ? indexToNoteFlats[resultIndex] : indexToNoteSharps[resultIndex];
+  // Determinar se deve usar bemois ou sustenidos
+  let newNoteName: NoteName;
+  if (shouldUseFlats(name)) {
+    newNoteName = indexToNoteFlats[resultIndex];
+  } else {
+    newNoteName = indexToNoteSharps[resultIndex];
+  }
   
-  // Calcular nova oitava apenas para fins de reprodução de áudio
+  // Calcular a oitava (para reprodução de áudio)
   let newOctave = octave;
   if (startIndex + semitonesAway >= 12) {
     const octavesUp = Math.floor((startIndex + semitonesAway) / 12);
@@ -169,24 +177,95 @@ export const generateRandomInterval = (level: 1 | 2 | 3 | 4): Interval => {
   }
 };
 
-// Conjunto fixo de notas para uso durante a hidratação (SSR)
-// Isso evita inconsistências entre cliente e servidor
-export const getStableNotes = (): Note[] => {
-  return [
-    { name: 'C', octave: 4 },
-    { name: 'D', octave: 4 },
-    { name: 'E', octave: 4 },
-    { name: 'F', octave: 4 },
-    { name: 'G', octave: 4 },
-    { name: 'A', octave: 4 },
-    { name: 'B', octave: 4 }
-  ];
+// Notas do ciclo de quintas (usando as formas mais comuns na teoria musical)
+// C -> G -> D -> A -> E -> B -> F# -> C# -> (G# ou Ab) -> (D# ou Eb) -> (A# ou Bb) -> F -> C
+export const CYCLE_OF_FIFTHS: NoteName[] = [
+  'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'
+];
+
+// Notas do ciclo de quartas (usando as formas mais comuns na teoria musical)
+// C -> F -> Bb -> Eb -> Ab -> Db -> Gb -> B -> E -> A -> D -> G -> C
+export const CYCLE_OF_FOURTHS: NoteName[] = [
+  'C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'
+];
+
+// Mapeamento para escalas corretas (para cada nota, quais são as notas que compõem sua escala maior)
+// Isso garante que os intervalos seguirão a escala correta
+const scaleNotes: Record<NoteName, NoteName[]> = {
+  // Escalas com sustenidos
+  'C': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
+  'G': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
+  'D': ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'],
+  'A': ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#'],
+  'E': ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'],
+  'B': ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#'],
+  'F#': ['F#', 'G#', 'A#', 'B', 'C#', 'D#', 'E#'],  // Corrigido para usar E#, que é musicalmente correto
+  
+  // Escalas com bemóis
+  'F': ['F', 'G', 'A', 'Bb', 'C', 'D', 'E'],
+  'Bb': ['Bb', 'C', 'D', 'Eb', 'F', 'G', 'A'],
+  'Eb': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D'],
+  'Ab': ['Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'G'],
+  'Db': ['Db', 'Eb', 'F', 'Gb', 'Ab', 'Bb', 'C'],
+  'Gb': ['Gb', 'Ab', 'Bb', 'Cb', 'Db', 'Eb', 'F'],
+  
+  // Notas enarmônicas (usando apenas as permitidas pelo tipo NoteName)
+  'D#': ['D#', 'F', 'G', 'G#', 'A#', 'C', 'D'],     // Simplificado
+  'G#': ['G#', 'A#', 'C', 'C#', 'D#', 'F', 'G'],    // Simplificado
+  'A#': ['A#', 'C', 'D', 'D#', 'F', 'G', 'A'],      // Simplificado
+  'C#': ['C#', 'D#', 'F', 'F#', 'G#', 'A#', 'B'],   // Ajustado
+  'Cb': ['Cb', 'Db', 'Eb', 'Fb', 'Gb', 'Ab', 'Bb'], // Escala teórica de Cb (enarmônica de B)
+  'Fb': ['Fb', 'Gb', 'Ab', 'A', 'Cb', 'Db', 'Eb'],  // Adaptada para usar notas válidas do tipo NoteName
+  'E#': ['E#', 'F#', 'G#', 'A#', 'B', 'C#', 'D#']   // E# (enarmônico de F)
+};
+
+// Ajusta escala para corrigir notas inválidas
+const adjustScaleNote = (noteName: string): NoteName => {
+  // Mapeia notas não permitidas para suas equivalentes permitidas
+  const adjustments: Record<string, NoteName> = {
+    'B#': 'C',
+    'Fb': 'E',
+    // E# agora é uma nota válida no tipo NoteName
+    // Outras conversões necessárias podem ser adicionadas aqui
+  };
+  
+  // Verificar se o nome está no mapeamento, senão retornar como está
+  return (adjustments[noteName] || noteName) as NoteName;
+};
+
+// Função para obter o intervalo correto baseado na escala
+// Isso garante que o 3º grau de C seja E, não Fb, etc.
+export const getNoteFromScale = (baseNote: NoteName, intervalDistance: number): NoteName => {
+  const scale = scaleNotes[baseNote] || scaleNotes['C']; // Fallback para C se a nota não estiver mapeada
+  const index = intervalDistance % 7;
+  const noteName = scale[index];
+  return adjustScaleNote(noteName);
+};
+
+// Gera uma nota aleatória do ciclo de quintas
+export const generateRandomNote = (): Note => {
+  // Combinar os dois ciclos, mas dar preferência para notas com escalas mais simples
+  const notesToChooseFrom = [...CYCLE_OF_FIFTHS, ...CYCLE_OF_FOURTHS];
+  const randomIndex = Math.floor(Math.random() * notesToChooseFrom.length);
+  const noteName = notesToChooseFrom[randomIndex];
+  const octave = 4; // Usar oitava fixa para simplificar
+  
+  return { name: noteName, octave };
 };
 
 // Versão segura para SSR, evita Math.random durante a hidratação
 export const generateRandomNoteForSSR = (index: number = 0): Note => {
-  const stableNotes = getStableNotes();
-  return stableNotes[index % stableNotes.length];
+  // Usar apenas notas do ciclo de quintas para estabilidade
+  const allNotes = [...CYCLE_OF_FIFTHS, ...CYCLE_OF_FOURTHS];
+  const noteName = allNotes[index % allNotes.length];
+  return { name: noteName, octave: 4 };
+};
+
+// Conjunto fixo de notas para uso durante a hidratação (SSR)
+export const getStableNotes = (): Note[] => {
+  // Retorna as primeiras 7 notas do ciclo de quintas combinado
+  const allNotes = [...CYCLE_OF_FIFTHS, ...CYCLE_OF_FOURTHS];
+  return allNotes.slice(0, 7).map(name => ({ name, octave: 4 }));
 };
 
 // Versão segura para SSR, evita sort aleatório durante a hidratação
@@ -262,19 +341,6 @@ export const getIntervalNameByNumber = (number: IntervalNumber): string => {
   }
 };
 
-// Gera uma nota aleatória
-export const generateRandomNote = (): Note => {
-  const noteNames = Object.keys(noteToIndex) as NoteName[];
-  // Filtrar para obter apenas as notas únicas (sem enarmônicos duplicados)
-  const uniqueNoteNames = [...new Set(noteNames.map(name => noteToIndex[name]))].map(index => 
-    Math.random() > 0.5 ? indexToNoteSharps[index] : indexToNoteFlats[index]
-  );
-  const randomName = uniqueNoteNames[Math.floor(Math.random() * uniqueNoteNames.length)] as NoteName;
-  const octave = (Math.floor(Math.random() * 3) + 3) as Note['octave']; // Oitavas 3, 4 ou 5
-  
-  return { name: randomName, octave };
-};
-
 // Gera opções erradas para uma pergunta
 export const generateWrongOptions = (
   referenceNote: Note, 
@@ -283,17 +349,31 @@ export const generateWrongOptions = (
 ): Note[] => {
   const options: Note[] = [correctAnswer];
   
-  while (options.length < count + 1) {
-    const randomNote = generateRandomNote();
-    
+  // Criar um array com as notas permitidas
+  const availableNotes = [...CYCLE_OF_FIFTHS, ...CYCLE_OF_FOURTHS];
+  
+  // Embaralhar as notas disponíveis
+  for (let i = availableNotes.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [availableNotes[i], availableNotes[j]] = [availableNotes[j], availableNotes[i]];
+  }
+  
+  // Adicionar notas até atingir o número desejado de opções
+  for (const noteName of availableNotes) {
     // Verifica se a nota já está nas opções ou é a resposta correta
-    // Ignorando a oitava, verificamos apenas o nome da nota
     const isDuplicate = options.some(
-      note => noteToIndex[note.name] === noteToIndex[randomNote.name]
+      note => noteToIndex[note.name] === noteToIndex[noteName]
     );
     
     if (!isDuplicate) {
-      options.push(randomNote);
+      options.push({
+        name: noteName,
+        octave: correctAnswer.octave
+      });
+    }
+    
+    if (options.length >= count + 1) {
+      break;
     }
   }
   

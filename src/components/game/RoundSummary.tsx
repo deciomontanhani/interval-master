@@ -77,6 +77,7 @@ export const RoundSummary = ({
                 Nota ref: {q.question.referenceNote.name}
                 {q.userAnswer && ` → ${q.userAnswer.name}`}
                 {!q.userAnswer && ' → Tempo esgotado'}
+                {!q.isCorrect && q.userAnswer && ` (Correto: ${q.question.correctAnswer.name})`}
               </p>
             </div>
             <div className="text-right">

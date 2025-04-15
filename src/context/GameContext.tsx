@@ -28,6 +28,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  
+  // Detectar quando estamos no cliente
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   // Limpa o timer ao desmontar o componente ou quando o status do jogo muda
   useEffect(() => {
@@ -42,8 +48,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Avança para a próxima pergunta
   const nextQuestion = useCallback(() => {
     try {
-      // Usando isClient=true para garantir valores aleatórios no cliente
-      const newQuestion = generateQuestion(gameState.level, true);
+      // Usando o flag isClient para garantir valores determinísticos durante a hidratação
+      const newQuestion = generateQuestion(gameState.level, isClient);
       
       setGameState(prev => ({
         ...prev,
@@ -53,7 +59,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Erro ao avançar para próxima questão:', error);
     }
-  }, [gameState.level]);
+  }, [gameState.level, isClient]);
   
   // Lidar com o timeout (tempo esgotado)
   const handleTimeout = useCallback(() => {
@@ -107,8 +113,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         try {
           // Caso contrário, vamos para a próxima pergunta
-          // Usando isClient=true para garantir valores aleatórios no cliente
-          const newQuestion = generateQuestion(prev.level, true);
+          // Usando o flag isClient para controlar valores aleatórios
+          const newQuestion = generateQuestion(prev.level, isClient);
           return {
             ...prev,
             currentQuestion: newQuestion,
@@ -120,7 +126,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
     }, 400);
-  }, [gameState.currentQuestion]);
+  }, [gameState.currentQuestion, isClient]);
   
   // Gerencia o timer
   useEffect(() => {

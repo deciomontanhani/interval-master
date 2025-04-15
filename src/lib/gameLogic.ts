@@ -6,8 +6,6 @@ import {
 import { 
   calculateInterval, 
   generateRandomInterval, 
-  generateRandomNote,
-  generateWrongOptions,
   noteToIndex,
   generateRandomNoteForSSR,
   generateWrongOptionsForSSR
@@ -42,20 +40,33 @@ export const initialGameState: GameState = {
 // Gera uma nova pergunta de acordo com o nível
 // isClient: se true, usará Math.random para gerar valores aleatórios
 export const generateQuestion = (level: 1 | 2 | 3 | 4, isClient: boolean = false): Question => {
-  // Gera uma nota de referência aleatória
-  const referenceNote = isClient ? generateRandomNote() : generateRandomNoteForSSR(0);
+  // Usar o index 0 como default para SSR para garantir estabilidade
+  const index = isClient ? Math.floor(Math.random() * 15) : 0;
   
-  // Gera um intervalo aleatório baseado no nível
-  const interval = generateRandomInterval(level);
+  // Gera uma nota de referência determinística
+  const referenceNote = generateRandomNoteForSSR(index);
+  
+  // Para intervalos, vamos criar uma forma determinística no SSR
+  let interval;
+  if (isClient) {
+    interval = generateRandomInterval(level);
+  } else {
+    // Intervalos determinísticos para SSR
+    const intervalsByLevel = {
+      1: { number: '3' as const },
+      2: { number: '5' as const, type: 'J' as const },
+      3: { number: '4' as const, type: 'J' as const },
+      4: { number: '2' as const, type: 'M' as const }
+    };
+    interval = intervalsByLevel[level];
+  }
   
   // Calcula a resposta correta
   const correctAnswer = calculateInterval(referenceNote, interval);
   
   // Gera opções erradas (entre 3 a 5 dependendo do nível)
   const optionsCount = level < 3 ? 3 : level === 3 ? 4 : 5;
-  const options = isClient 
-    ? generateWrongOptions(referenceNote, correctAnswer, optionsCount)
-    : generateWrongOptionsForSSR(referenceNote, correctAnswer, optionsCount);
+  const options = generateWrongOptionsForSSR(referenceNote, correctAnswer, optionsCount);
   
   // Define o limite de tempo (reduz para níveis mais altos)
   const timeLimit = level === 4 ? 7 : DEFAULT_TIME_LIMIT;
