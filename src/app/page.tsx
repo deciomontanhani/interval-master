@@ -38,37 +38,57 @@ export default function Home() {
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <Button 
-              variant="primary" 
-              className="w-full"
-              onClick={() => handleStartGame(1)}
-            >
-              Nível 1: Iniciante
-            </Button>
+            <div className="flex flex-col">
+              <Button 
+                variant="primary" 
+                className="w-full"
+                onClick={() => handleStartGame(1)}
+              >
+                Nível 1: Iniciante
+              </Button>
+              <p className="text-sm text-gray-600 mt-1 text-center">
+                Intervalos genéricos (segunda, terça, etc.) sem classificação específica.
+              </p>
+            </div>
             
-            <Button 
-              variant="primary" 
-              className="w-full"
-              onClick={() => handleStartGame(2)}
-            >
-              Nível 2: Intermediário
-            </Button>
+            <div className="flex flex-col">
+              <Button 
+                variant="primary" 
+                className="w-full"
+                onClick={() => handleStartGame(2)}
+              >
+                Nível 2: Intermediário
+              </Button>
+              <p className="text-sm text-gray-600 mt-1 text-center">
+                Intervalos justos, maiores e menores. Mais opções de resposta.
+              </p>
+            </div>
             
-            <Button 
-              variant="primary" 
-              className="w-full"
-              onClick={() => handleStartGame(3)}
-            >
-              Nível 3: Avançado
-            </Button>
+            <div className="flex flex-col">
+              <Button 
+                variant="primary" 
+                className="w-full"
+                onClick={() => handleStartGame(3)}
+              >
+                Nível 3: Avançado
+              </Button>
+              <p className="text-sm text-gray-600 mt-1 text-center">
+                Inclui intervalos aumentados e diminutos. Tempo de resposta reduzido.
+              </p>
+            </div>
             
-            <Button 
-              variant="primary"
-              className="w-full"
-              onClick={() => handleStartGame(4)}
-            >
-              Nível 4: Expert
-            </Button>
+            <div className="flex flex-col">
+              <Button 
+                variant="primary"
+                className="w-full"
+                onClick={() => handleStartGame(4)}
+              >
+                Nível 4: Expert
+              </Button>
+              <p className="text-sm text-gray-600 mt-1 text-center">
+                Todos os tipos de intervalos, mais opções de resposta, tempo muito limitado.
+              </p>
+            </div>
           </div>
           
           {highScore !== null && (
